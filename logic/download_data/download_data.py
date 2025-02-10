@@ -1,15 +1,11 @@
 import asyncio
-import logging
 import pandas as pd
 import yfinance as yf
 from io import BytesIO
 import traceback
 
 from logic.indicators.indicators import IndicatorCalculator
-
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from logging_config import logger
 
 
 class HistoricalDataDownloader:
@@ -17,6 +13,7 @@ class HistoricalDataDownloader:
         self.symbol = symbol
         self.start_date = start_date
         self.end_date = end_date
+        logger.info(f"Initialized HistoricalDataDownloader for {self.symbol} from {self.start_date} to {self.end_date}")
 
     async def fetch_yahoo_finance_data(self):
         """Fetch historical stock data from Yahoo Finance asynchronously."""
@@ -26,11 +23,9 @@ class HistoricalDataDownloader:
             historical_data = await asyncio.to_thread(
                 ticker.history, start=self.start_date, end=self.end_date
             )
-
             if historical_data.empty:
                 logger.warning(f"No data available for {self.symbol} from Yahoo Finance.")
                 return None
-
             logger.info("Yahoo Finance data fetched successfully.")
             return historical_data
         except Exception as e:
@@ -49,7 +44,6 @@ class HistoricalDataDownloader:
         if "Close" not in historical_data.columns:
             logger.error("Error: 'Close' column missing. Cannot compute indicators.")
             return historical_data
-
         logger.info("Calculating technical indicators...")
         indicator_calculator = IndicatorCalculator(historical_data)
         return indicator_calculator.compute_all_indicators()
@@ -60,15 +54,13 @@ class HistoricalDataDownloader:
         try:
             historical_data = await self.fetch_historical_data()
             data_with_indicators = self.calculate_indicators(historical_data)
-
             if data_with_indicators is None:
                 logger.error("Failed to compute indicators.")
                 return None
 
-            # Remove timezone information from the index
+            # Remove timezone information from the index, if present
             if hasattr(data_with_indicators.index, 'tz') and data_with_indicators.index.tz is not None:
                 data_with_indicators.index = data_with_indicators.index.tz_localize(None)
-
             # Remove timezone from any datetime columns
             for col in data_with_indicators.select_dtypes(include=["datetime64[ns, UTC]"]).columns:
                 data_with_indicators[col] = data_with_indicators[col].dt.tz_localize(None)
@@ -77,10 +69,8 @@ class HistoricalDataDownloader:
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 data_with_indicators.to_excel(writer, sheet_name='Historical Data', index=True)
             output.seek(0)
-
             logger.info("Excel file generation complete.")
             return output.getvalue()
         except Exception as e:
             logger.error(f"An error occurred during Excel generation: {e}\n{traceback.format_exc()}")
             return None
-

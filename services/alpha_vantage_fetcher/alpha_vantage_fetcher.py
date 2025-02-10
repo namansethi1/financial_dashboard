@@ -2,13 +2,10 @@ import aiohttp
 import asyncio
 import pandas as pd
 import os
-import logging
 import yfinance as yf
 from diskcache import Cache
-import time
+from logging_config import alpha_logger
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("AlphaVantageFetcher")
 
 class AlphaVantageFetcher:
     BASE_URL = "https://www.alphavantage.co/query"
@@ -19,6 +16,7 @@ class AlphaVantageFetcher:
         self.interval = interval
         self.cache = Cache("./cache")
         self.semaphore = asyncio.Semaphore(3)
+        alpha_logger.info("Initialized AlphaVantageFetcher for %s with interval %s", self.ticker, self.interval)
 
     async def _fetch(self, session: aiohttp.ClientSession, url: str):
         async with self.semaphore:
@@ -32,15 +30,15 @@ class AlphaVantageFetcher:
                         data = await response.json()
 
                         if "Note" in data:  # API rate limit hit
-                            logger.warning("Rate limit hit, retrying in %s seconds...", delay)
-                            await asyncio.sleep(delay)  # Use async sleep instead of time.sleep()
+                            alpha_logger.warning("Rate limit hit, retrying in %s seconds...", delay)
+                            await asyncio.sleep(delay)
                             delay *= 2
                             continue
 
                         return data  # Successful response
 
                 except aiohttp.ClientError as e:
-                    logger.error("Network error: %s", e)
+                    alpha_logger.error("Network error: %s", e)
                     return None  # Network error, return None immediately
 
         return None  # After all retries fail
@@ -51,7 +49,7 @@ class AlphaVantageFetcher:
         cached_data = self.cache.get(cache_key)
 
         if cached_data is not None:
-            logger.info("Using cached data for %s", self.ticker)
+            alpha_logger.info("Using cached data for %s", self.ticker)
             return cached_data
 
         # Fetch from AlphaVantage
@@ -63,25 +61,33 @@ class AlphaVantageFetcher:
 
             if data and f"Time Series ({self.interval})" in data:
                 df = pd.DataFrame.from_dict(data[f"Time Series ({self.interval})"], orient='index', dtype=float)
-                df = df.rename(columns={ "1. open": "Open", "2. high": "High", "3. low": "Low", "4. close": "Close", "5. volume": "Volume" })
+                df = df.rename(columns={
+                    "1. open": "Open",
+                    "2. high": "High",
+                    "3. low": "Low",
+                    "4. close": "Close",
+                    "5. volume": "Volume"
+                })
                 df.index = pd.to_datetime(df.index)
                 df.sort_index(inplace=True)
                 self.cache.set(cache_key, df, expire=600)
+                alpha_logger.info("AlphaVantage data fetched and cached for %s", self.ticker)
                 return df
 
         # If AlphaVantage fails, fall back to Yahoo Finance
-        logger.warning("AlphaVantage data not available, switching to Yahoo Finance...")
+        alpha_logger.warning("AlphaVantage data not available for %s, switching to Yahoo Finance...", self.ticker)
         try:
             stock = yf.Ticker(self.ticker)
             df = stock.history(period="1d", interval=self.interval)
 
             if df.empty:
-                logger.error("Yahoo Finance data also unavailable for %s", self.ticker)
+                alpha_logger.error("Yahoo Finance data also unavailable for %s", self.ticker)
                 return pd.DataFrame()
 
             self.cache.set(cache_key, df, expire=600)
+            alpha_logger.info("Yahoo Finance data fetched and cached for %s", self.ticker)
             return df
 
         except Exception as e:
-            logger.error("Failed to fetch data from Yahoo Finance: %s", str(e))
+            alpha_logger.error("Failed to fetch data from Yahoo Finance: %s", str(e))
             return pd.DataFrame()
