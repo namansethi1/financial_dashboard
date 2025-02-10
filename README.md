@@ -15,6 +15,7 @@ A real-time financial dashboard that fetches stock market data using **Alpha Van
 - [Configuration](#configuration)
 - [Usage](#usage)
 - [Async & Caching](#async--caching)
+- [Logging](#logging)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -125,6 +126,17 @@ def get_cached_data(key):
 def set_cached_data(key, value, expire=600):
     cache.set(key, value, expire=expire)
 ```
+
+## Logging
+
+This project uses Python's built-in logging module, configured in `logging_config.py`, to record important application events. The logs are automatically written to rotating log files in the `logs` directory, ensuring that they don't grow indefinitely. The following log files are maintained:
+
+- **General Logs:** All application events are logged to `logs/general.log`.
+- **Alpha Vantage Logs:** Events related to fetching data from Alpha Vantage are logged to `logs/alpha_vantage.log`.
+- **Yahoo Finance Logs:** Events related to fetching data from Yahoo Finance are logged to `logs/yahoo_finance.log`.
+
+You can customize the log file locations, maximum file sizes, and backup counts by modifying the settings in `logging_config.py`.
+
 
 ---
 
