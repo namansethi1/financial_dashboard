@@ -10,6 +10,7 @@ certifi==2025.1.31
 charset-normalizer==3.4.1
 click==8.1.8
 colorama==0.4.6
+diskcache==5.6.3
 exceptiongroup==1.2.2
 frozenlist==1.5.0
 gitdb==4.0.12
@@ -25,10 +26,11 @@ MarkupSafe==3.0.2
 mdurl==0.1.2
 multidict==6.1.0
 narwhals==1.25.2
-numpy==2.2.2
+numpy==1.24.4
 packaging==24.2
 pandas==2.2.3
 pillow==11.1.0
+plotly==6.0.0
 pluggy==1.5.0
 propcache==0.2.1
 protobuf==5.29.3
@@ -45,6 +47,7 @@ rpds-py==0.22.3
 six==1.17.0
 smmap==5.0.2
 streamlit==1.42.0
+TA-Lib @ file:///C:/Users/sethi/Downloads/TA_Lib-0.4.28-cp310-cp310-win_amd64.whl#sha256=c4ba337d31a2c83e71696dad7ea9b2e3f0bbe9c303c06bad2de0736243702d5e
 tenacity==9.0.0
 toml==0.10.2
 tomli==2.2.1
@@ -55,4 +58,7 @@ urllib3==2.3.0
 watchdog==6.0.0
 win32_setctime==1.2.0
 yarl==1.18.3
-libs/TA_Lib-0.4.28-cp310-cp310-win_amd64.whl
+
+nest-asyncio~=1.6.0
+yfinance~=0.2.52
+pytest-mock~=3.14.0

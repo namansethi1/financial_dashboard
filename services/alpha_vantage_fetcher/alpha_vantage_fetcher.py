@@ -33,16 +33,17 @@ class AlphaVantageFetcher:
 
                         if "Note" in data:  # API rate limit hit
                             logger.warning("Rate limit hit, retrying in %s seconds...", delay)
-                            time.sleep(delay)
+                            await asyncio.sleep(delay)  # Use async sleep instead of time.sleep()
                             delay *= 2
                             continue
 
-                        return data
+                        return data  # Successful response
+
                 except aiohttp.ClientError as e:
                     logger.error("Network error: %s", e)
-                    return None
+                    return None  # Network error, return None immediately
 
-        return None
+        return None  # After all retries fail
 
     async def fetch_intraday_data(self):
         """Fetch stock data with caching. Falls back to Yahoo Finance if AlphaVantage fails."""
