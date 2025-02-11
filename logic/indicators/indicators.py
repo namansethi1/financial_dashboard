@@ -46,13 +46,14 @@ class IndicatorCalculator:
             logger.error("Error calculating CCI: %s", e, exc_info=True)
             return None
 
-    def calculate_adx(self, period: int = 20):
+    def calculate_adx(self, period: int = 20, adx_smoothing: int = 2):
         """Calculate ADX for the given period."""
         logger.info("Calculating ADX with period %d", period)
         try:
-            result = talib.ADX(self.df['High'], self.df['Low'], self.df['Close'], timeperiod=period)
+            adx = talib.ADX(self.df['High'], self.df['Low'], self.df['Close'], timeperiod=period)
+            smoothed_adx = talib.EMA(adx, timeperiod=adx_smoothing)
             logger.debug("ADX calculated successfully.")
-            return result
+            return smoothed_adx
         except Exception as e:
             logger.error("Error calculating ADX: %s", e, exc_info=True)
             return None
