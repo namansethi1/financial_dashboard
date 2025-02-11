@@ -13,17 +13,8 @@ from constants.nifty_50_stock_symbols import NIFTY_50_STOCKS
 from streamlit_autorefresh import st_autorefresh
 from logging_config import logger
 
-
 # Allow nested event loops (needed for async code in Streamlit)
 nest_asyncio.apply()
-
-# --------------------------------------------
-# Initialize session state for download dates
-# --------------------------------------------
-if "download_start_date" not in st.session_state:
-    st.session_state["download_start_date"] = datetime.date.today() - datetime.timedelta(days=30)
-if "download_end_date" not in st.session_state:
-    st.session_state["download_end_date"] = datetime.date.today()
 
 # ----------------------------------------
 # Page Configuration & Global Styling
@@ -79,7 +70,7 @@ def run_async(coro):
     return loop.run_until_complete(coro)
 
 # -----------------------------------
-# 📈 Chart Tab (Auto-Refresh)
+# 📈 Chart Tab (Auto-Refresh & Loader)
 # -----------------------------------
 with tab_chart:
     st.title(f"📈 {ticker_symbol} - Real-Time Dashboard")
@@ -102,30 +93,27 @@ with tab_chart:
     stock_data_handler = StockDataHandler(ticker_symbol, interval, selected_indicators)
 
     async def update_stock_data():
-        await stock_data_handler.fetch_and_plot_data()
-        logger.info("Stock data updated and chart plotted for %s", ticker_symbol)
+        with st.spinner("📊 Loading Chart... Please wait."):
+            await stock_data_handler.fetch_and_plot_data()
+            logger.info("Stock data updated and chart plotted for %s", ticker_symbol)
 
     run_async(update_stock_data())
     update_time()
 
 # -----------------------------------
-# 📥 Download Tab (Persistent Panel)
+# 📥 Download Tab (Persistent Download Link & Loader)
 # -----------------------------------
 with tab_download:
     st.title("📥 Download Historical Data")
     logger.info("Download tab activated for ticker %s", ticker_symbol)
 
     # Persistent date input
-    start_date = st.date_input(
-        "Start Date",
-        value=st.session_state["download_start_date"],
-        key="download_start_date"
-    )
-    end_date = st.date_input(
-        "End Date",
-        value=st.session_state["download_end_date"],
-        key="download_end_date"
-    )
+    start_date = st.date_input("Start Date", value=datetime.date.today() - datetime.timedelta(days=30), key="download_start_date")
+    end_date = st.date_input("End Date", value=datetime.date.today(), key="download_end_date")
+
+    # Ensure session state exists for storing download data
+    if "download_link" not in st.session_state:
+        st.session_state["download_link"] = None
 
     if st.button("Download Data"):
         if not ticker_symbol:
@@ -135,20 +123,23 @@ with tab_download:
             st.error("⚠️ End date must be after start date.")
             logger.error("Download error: Invalid date range. Start: %s, End: %s", start_date, end_date)
         else:
-            with st.status("📥 Fetching historical data, please wait...", expanded=True) as status:
+            with st.spinner("📥 Fetching historical data... Please wait."):
                 downloader = HistoricalDataDownloader(ticker_symbol, str(start_date), str(end_date))
                 excel_data = asyncio.run(downloader.generate_excel_file())
 
                 if excel_data:
-                    status.update(label="✅ Download Ready!", state="complete", expanded=False)
                     logger.info("Historical data downloaded successfully for %s", ticker_symbol)
-                    # Convert file bytes to a base64-encoded download link.
+
+                    # Convert file bytes to a base64-encoded download link and store in session state
                     b64 = base64.b64encode(excel_data).decode()
-                    href = (
+                    st.session_state["download_link"] = (
                         f'<a href="data:application/octet-stream;base64,{b64}" '
                         f'download="{ticker_symbol}_historical_data.xlsx">📥 Click here to download</a>'
                     )
-                    st.markdown(href, unsafe_allow_html=True)
                 else:
-                    status.update(label="⚠️ Failed to fetch historical data. Please try again.", state="error")
+                    st.error("⚠️ Failed to fetch historical data. Please try again.")
                     logger.error("Failed to generate Excel file for historical data of %s", ticker_symbol)
+
+    # Show the download link if available (even after refresh)
+    if st.session_state["download_link"]:
+        st.markdown(st.session_state["download_link"], unsafe_allow_html=True)
