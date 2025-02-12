@@ -61,4 +61,5 @@ yarl==1.18.3
 nest-asyncio~=1.6.0
 yfinance~=0.2.52
 pytest-mock~=3.14.0
-streamlit-autorefresh
+streamlit-autorefresh==1.0.1
+openpyxl==3.1.5
