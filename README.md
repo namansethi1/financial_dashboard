@@ -28,6 +28,7 @@ A Python-based Streamlit application that provides:
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
+- [Dockerization](#Dockerization)
 - [Async & Caching](#async--caching)
 - [Logging](#logging)
 - [Testing](#testing)
@@ -87,6 +88,7 @@ A Python-based Streamlit application that provides:
 ├── 📂 venv                        # Virtual environment (excluded from repo)  
 ├── .gitignore                     # Git ignore file  
 ├── app.py                         # Main application entry point  
+├── DockerFile                     # Docker file for contarization 
 ├── config.py                      # Configuration settings  
 ├── logging_config.py              # Logging configuration  
 ├── README.md                      # Project documentation  
@@ -158,6 +160,32 @@ This project uses **`config.py` and `secrets.json`** for API key management:
     - MACD (Moving Average Convergence Divergence)
 
 ---
+
+### **Dockerization**  
+
+This project supports containerization using Docker. It simplifies the process of setting up and running the application in different environments.
+
+#### **Docker Setup**
+
+1. **Building the Docker Image**  
+   To build the Docker image, run the following command:
+   ```bash
+   docker build -t financial-dashboard .
+   ```
+
+2. **Running the Application in a Container**  
+   Once the image is built, you can run the container using this command:
+   ```bash
+   docker run -p 8501:8501 financial-dashboard
+   ```
+
+3. **Accessing the Application**  
+   After running the container, access the application in your browser by visiting:  
+   `http://localhost:8501`
+
+
+---
+
 
 ## Async & Caching
 

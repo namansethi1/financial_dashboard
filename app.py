@@ -1,4 +1,6 @@
 import base64
+import zipfile
+import io
 import time
 import nest_asyncio
 import streamlit as st
@@ -115,6 +117,7 @@ with tab_download:
     if "download_link" not in st.session_state:
         st.session_state["download_link"] = None
 
+    # Avoid triggering the download on every auto-refresh by checking if the button was clicked
     if st.button("Download Data"):
         if not ticker_symbol:
             st.error("⚠️ Please select a stock symbol.")
@@ -130,11 +133,18 @@ with tab_download:
                 if excel_data:
                     logger.info("Historical data downloaded successfully for %s", ticker_symbol)
 
-                    # Convert file bytes to a base64-encoded download link and store in session state
-                    b64 = base64.b64encode(excel_data).decode()
+                    # Create a zip file containing the Excel file
+                    buf = io.BytesIO()
+                    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                        # Create a file name
+                        zipf.writestr(f"{ticker_symbol}_historical_data.xlsx", excel_data)
+                    zip_data = buf.getvalue()
+
+                    # Convert zip file bytes to a base64-encoded download link and store in session state
+                    b64 = base64.b64encode(zip_data).decode()
                     st.session_state["download_link"] = (
                         f'<a href="data:application/octet-stream;base64,{b64}" '
-                        f'download="{ticker_symbol}_historical_data.xlsx">📥 Click here to download</a>'
+                        f'download="{ticker_symbol}_historical_data.zip">📥 Click here to download (ZIP)</a>'
                     )
                 else:
                     st.error("⚠️ Failed to fetch historical data. Please try again.")
